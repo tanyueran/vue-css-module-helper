@@ -43,12 +43,12 @@ export function findStringRangeInFile(
 }
 
 /**
- * 解析变量名称
+ * 解析.前面的变量明文
  * @param document
  * @param position
  * @returns
  */
-export function parseVarName(
+export function parseCurrentLineVarName(
   document: vscode.TextDocument,
   position: vscode.Position
 ) {
@@ -65,13 +65,13 @@ export function parseVarName(
 }
 
 /**
- * 获取 import 样式文件的地址
+ * 获取当前变量所属的 import 样式文件的地址
  * @param document
  * @param text
  * @param varName
  * @returns
  */
-export function getImportScssModulePath(
+export function getCurrentVarBelongImportStylePath(
   document: vscode.TextDocument,
   text: string,
   varName: string
@@ -124,4 +124,54 @@ export function getWorkspacePathForFile(
 ): string | undefined {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
   return workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
+}
+
+
+/**
+ * 缓存已经解析的样式文件中的内容
+ * key: fullPath
+ * value: class 的 string[]
+ */
+export const styleContentPathAndClassMap = new Map();
+
+/**
+ * 解析css 的内容
+ * @param document
+ * @param varName
+ * @returns
+ */
+export function parseModuleCssContent(
+  document: vscode.TextDocument,
+  varName: string
+): string[] {
+  const text = document.getText();
+
+  const stylePath = getCurrentVarBelongImportStylePath(document, text, varName);
+  if (!stylePath) {
+    return [];
+  }
+
+  // 缓存中存在，则直接返回
+  if (styleContentPathAndClassMap.get(stylePath)) {
+    return styleContentPathAndClassMap.get(stylePath);
+  }
+
+  let cssContent = fs.readFileSync(stylePath).toString();
+  // 去掉单行注释
+  let splitList = cssContent.split("\n");
+  splitList = splitList.filter((item) => !item.trim().startsWith("//"));
+  cssContent = splitList.join("\n");
+  const classRegex = /[.]{1}([a-zA-Z][a-zA-Z0-9-_]*)\s+{?/g;
+  const classIterator = cssContent.matchAll(classRegex);
+  let list = [];
+  for (let item of classIterator) {
+    let [, className] = item;
+    if (className) {
+      list.push(className);
+    }
+  }
+  // 缓存
+  styleContentPathAndClassMap.set(stylePath, list);
+  console.log(list);
+  return list;
 }

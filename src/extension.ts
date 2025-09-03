@@ -1,55 +1,11 @@
 import * as vscode from "vscode";
-import * as fs from "node:fs";
 import {
+  styleContentPathAndClassMap,
   findStringRangeInFile,
-  getImportScssModulePath,
-  parseVarName,
+  getCurrentVarBelongImportStylePath,
+  parseModuleCssContent,
+  parseCurrentLineVarName,
 } from "./utils";
-
-// key pathName : value: 数组
-const classObjMap = new Map();
-
-/**
- * 解析css 的内容
- * @param document
- * @param varName
- * @returns
- */
-function parseModuleCssContent(
-  document: vscode.TextDocument,
-  varName: string
-): string[] {
-  const text = document.getText();
-
-  const stylePath = getImportScssModulePath(document, text, varName);
-  if (!stylePath) {
-    return [];
-  }
-
-  // 缓存中存在，则直接返回
-  if (classObjMap.get(stylePath)) {
-    return classObjMap.get(stylePath);
-  }
-
-  let cssContent = fs.readFileSync(stylePath).toString();
-  // 去掉单行注释
-  let splitList = cssContent.split("\n");
-  splitList = splitList.filter((item) => !item.trim().startsWith("//"));
-  cssContent = splitList.join("\n");
-  const classRegex = /[.]{1}([a-zA-Z][a-zA-Z0-9-_]*)\s+{?/g;
-  const classIterator = cssContent.matchAll(classRegex);
-  let list = [];
-  for (let item of classIterator) {
-    let [, className] = item;
-    if (className) {
-      list.push(className);
-    }
-  }
-  // 缓存
-  classObjMap.set(stylePath, list);
-  console.log(list);
-  return list;
-}
 
 class CssModuleCompletionProvider implements vscode.CompletionItemProvider {
   provideCompletionItems(
@@ -60,7 +16,7 @@ class CssModuleCompletionProvider implements vscode.CompletionItemProvider {
   ): vscode.ProviderResult<
     vscode.CompletionItem[] | vscode.CompletionList<vscode.CompletionItem>
   > {
-    const varName = parseVarName(document, position);
+    const varName = parseCurrentLineVarName(document, position);
     if (!varName) {
       return undefined;
     }
@@ -88,7 +44,10 @@ class CssModuleCompletionProvider implements vscode.CompletionItemProvider {
       // TODO
       // 含有-的class 应该替换掉 . 才对，但是现在替换不了
       const text = cls.includes("-") ? `.['${cls}']` : `.${cls}`;
-      let item = new vscode.CompletionItem(text);
+      let item = new vscode.CompletionItem(
+        text,
+        vscode.CompletionItemKind.Text
+      );
       item.insertText = text;
       item.range = replaceRange;
       completions.push(item);
@@ -151,7 +110,7 @@ class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
         return undefined;
       }
 
-      const stylePath = getImportScssModulePath(
+      const stylePath = getCurrentVarBelongImportStylePath(
         document,
         document.getText(),
         varName
@@ -179,8 +138,35 @@ class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
   }
 }
 
+/**
+ * 添加样式文件监听器
+ * @returns
+ */
+function createStyleModuleFileWatchers(): vscode.FileSystemWatcher[] {
+  return ["css", "less", "scss"].map((item) => {
+    let watcher = vscode.workspace.createFileSystemWatcher(
+      `**/*.module.${item}`
+    );
+
+    // 监听文件内容变化
+    watcher.onDidChange((uri) => {
+      console.log("File changed:", uri.fsPath);
+      styleContentPathAndClassMap.delete(uri.fsPath);
+    });
+
+    // 监听文件删除
+    watcher.onDidDelete((uri) => {
+      console.log("File deleted:", uri.fsPath);
+      styleContentPathAndClassMap.delete(uri.fsPath);
+    });
+    return watcher;
+  });
+}
+
 // 激活扩展
 export async function activate(context: vscode.ExtensionContext) {
+  // 创建文件监听器
+
   // 添加提示的扩展
   const completionProvider = vscode.languages.registerCompletionItemProvider(
     "vue",
@@ -193,7 +179,14 @@ export async function activate(context: vscode.ExtensionContext) {
     "vue",
     new CssModuleDefinitionProvider()
   );
+
   context.subscriptions.push(completionProvider, definitionProvider);
+  createStyleModuleFileWatchers().forEach((watcher) => {
+    context.subscriptions.push(watcher);
+  });
 }
 
-export function deactivate() {}
+export function deactivate() {
+  // 清空缓存
+  styleContentPathAndClassMap.clear();
+}
