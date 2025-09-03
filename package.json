@@ -3,6 +3,7 @@
   "displayName": "vue-outer-module-style-class-helper",
   "description": "这是一个vue文件的外部module模式的样式文件helper",
   "version": "0.0.1",
+  "publisher": "tanyueran",
   "engines": {
     "vscode": "^1.103.0"
   },
@@ -21,12 +22,8 @@
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "lint": "eslint src"
   },
   "devDependencies": {
     "@types/vscode": "^1.103.0",
@@ -40,5 +37,9 @@
     "typescript": "^5.9.2",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tanyueran/vue-outer-module-style-class-helper"
   }
 }
