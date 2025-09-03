@@ -1,6 +1,6 @@
 # vue-outer-module-style-class-helper
 
-> 这是一个vue文件的外部module模式的样式文件helper
+> 这是vscode 的插件项目，用于.vue文件的使用外部module模式的样式文件helper
 
 ## 功能
 - 支持vue单文件中的输入:class="style."  时的提示
