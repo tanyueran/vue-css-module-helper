@@ -10,3 +10,8 @@
 - 输入:class="style." 提示选择["header-wrapper"]的形式不能替换代.
 - 缓存优化，以及缓存清理
 - 支持vue标签引入<style module src="xxx.module.sss"></style>的解析
+
+## 打包与使用
+- 1、项目中安装 @vscode/vsce  `pnpm add -D @vscode/vsce`
+- 2、打包`npx vsce package`
+- 3、把生成的`.vsix`文件按照的自己的vscode中即可使用
