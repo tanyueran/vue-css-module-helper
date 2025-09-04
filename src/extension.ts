@@ -72,6 +72,7 @@ class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
     const lineRange = document.lineAt(position.line).range;
     // 点击的当前行的内容
     let lineContent = document.getText(lineRange);
+    // TODO ？
     let result = lineContent
       .split(/\s+/)
       .filter((item) => item.includes(":class") && item.includes(clickText));
@@ -93,8 +94,8 @@ class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
       // 含点的情况
       if (classContent.includes(".")) {
         const classContentList = classContent.split(".");
+        varName = classContentList[0];
         className = classContentList[1];
-        varName = classContent[0];
         // 不含点的情况
       } else {
         const classContentList = classContent
@@ -181,6 +182,8 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(completionProvider, definitionProvider);
+
+  // 添加样式文件的监听器
   createStyleModuleFileWatchers().forEach((watcher) => {
     context.subscriptions.push(watcher);
   });

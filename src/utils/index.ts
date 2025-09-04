@@ -101,11 +101,11 @@ export function getCurrentVarBelongImportStylePath(
   let stylePath = "";
   if (modulePath.includes("@")) {
     const currentWorkSpacePath = getWorkspacePathForFile(document.uri);
-    if(!currentWorkSpacePath){
+    if (!currentWorkSpacePath) {
       return undefined;
     }
     // 默认认为@ 对应 当前工作区下的src
-    stylePath = modulePath.replace('@', currentWorkSpacePath + '/src');
+    stylePath = modulePath.replace("@", currentWorkSpacePath + "/src");
   } else {
     let dirPath = path.dirname(document.uri.fsPath);
     stylePath = path.resolve(dirPath, modulePath);
@@ -125,7 +125,6 @@ export function getWorkspacePathForFile(
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
   return workspaceFolder ? workspaceFolder.uri.fsPath : undefined;
 }
-
 
 /**
  * 缓存已经解析的样式文件中的内容
@@ -158,10 +157,11 @@ export function parseModuleCssContent(
 
   let cssContent = fs.readFileSync(stylePath).toString();
   // 去掉单行注释
-  let splitList = cssContent.split("\n");
+  /*  let splitList = cssContent.split("\n");
   splitList = splitList.filter((item) => !item.trim().startsWith("//"));
   cssContent = splitList.join("\n");
-  const classRegex = /[.]{1}([a-zA-Z][a-zA-Z0-9-_]*)\s+{?/g;
+  const classRegex = /[.]{1}([a-zA-Z][a-zA-Z0-9-_]*)\s+{?/g; */
+  const classRegex = /^\.([a-zA-Z0-9_-]+)(?=\s*[{])/gm;
   const classIterator = cssContent.matchAll(classRegex);
   let list = [];
   for (let item of classIterator) {
