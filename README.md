@@ -11,7 +11,9 @@
 - [ ] 输入:class="style." 提示选择["header-wrapper"]的形式不能替换代.
 - [ ] 缓存优化，以及缓存清理
 - [ ] 支持vue标签引入<style module src="xxx.module.sss"></style>的解析
-- [ ] 支持属性传递的情况下的 style.xxxx 的跳转
+- [ ] 支持属性传递的情况下的跳转，类似：<div :xx-class="commonStyle['detail-page-sub-title']">基础信息</div>
+- [ ] 支持数组的情况下的跳转，类似：<div :class="[commonStyle['detail-page-sub-title'], style['title']]">基础信息</div>
+- [ ] 排除样式文件中符合条件的:global 下的class /^\.([a-zA-Z0-9_-]+)(?=\s*[{])/gm 
 
 ## 打包与使用
 - 1、项目中安装 @vscode/vsce  `pnpm add -D @vscode/vsce`

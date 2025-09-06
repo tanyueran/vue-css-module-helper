@@ -2,10 +2,17 @@
 
 ### Features
 
-* 支持vue单文件中引入的外部css module 的文件，在输入时提示，以及链接进入定义的地方
+- 支持 vue 单文件中引入的外部 css module 的文件，在输入时提示，以及链接进入定义的地方
 
 # [0.0.2]
 
 ### Features
 
-* 添加对应*.module.css|less|scss 文件的监听，并清理缓存
+- 添加对应\*.module.css|less|scss 文件的监听，并清理缓存
+
+# [0.0.3]
+
+### Features
+
+- 优化了解析的缓存策略
+- 代码重构，支持更多的方式的跳转

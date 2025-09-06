@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import * as fs from "node:fs";
-import * as path from "node:path";
+import {
+  getStyleContentPathAndClass,
+  getVueFilePathAndImportStylePathMap,
+} from "../store";
 
 /**
  * 获取字符串儿在某个文件的Range
@@ -60,7 +63,7 @@ export function parseCurrentLineVarName(
   if (!dotMatch) {
     return undefined;
   }
-  const [, varName, partial] = dotMatch;
+  const [, varName] = dotMatch;
   return varName;
 }
 
@@ -73,45 +76,11 @@ export function parseCurrentLineVarName(
  */
 export function getCurrentVarBelongImportStylePath(
   document: vscode.TextDocument,
-  text: string,
   varName: string
 ) {
-  const importRegex =
-    /import\s+(\w+)\s+from\s+['"]([^'"]+\.module\.scss|less|css)['"]/g;
-  const matchIterator = text.matchAll(importRegex);
-  let match;
-  for (let item of matchIterator) {
-    let [, _varName] = item;
-    if (_varName === varName) {
-      match = item;
-      break;
-    }
-  }
-  // [, varName, modulePath]
-  if (!match) {
-    return undefined;
-  }
-  const [, , modulePath] = match!;
-
-  if (!modulePath) {
-    return undefined;
-  }
-
-  // 走的@的相对路径
-  let stylePath = "";
-  if (modulePath.includes("@")) {
-    const currentWorkSpacePath = getWorkspacePathForFile(document.uri);
-    if (!currentWorkSpacePath) {
-      return undefined;
-    }
-    // 默认认为@ 对应 当前工作区下的src
-    stylePath = modulePath.replace("@", currentWorkSpacePath + "/src");
-  } else {
-    let dirPath = path.dirname(document.uri.fsPath);
-    stylePath = path.resolve(dirPath, modulePath);
-  }
-
-  return stylePath;
+  const list = getVueFilePathAndImportStylePathMap(document.uri.fsPath);
+  const obj = list.find((item) => item.varName === varName);
+  return obj?.fullPath;
 }
 
 /**
@@ -127,40 +96,17 @@ export function getWorkspacePathForFile(
 }
 
 /**
- * 缓存已经解析的样式文件中的内容
- * key: fullPath
- * value: class 的 string[]
+ * 获取样式文件的顶级class的list
+ * @param cssContent
  */
-export const styleContentPathAndClassMap = new Map();
-
-/**
- * 解析css 的内容
- * @param document
- * @param varName
- * @returns
- */
-export function parseModuleCssContent(
-  document: vscode.TextDocument,
-  varName: string
-): string[] {
-  const text = document.getText();
-
-  const stylePath = getCurrentVarBelongImportStylePath(document, text, varName);
-  if (!stylePath) {
-    return [];
-  }
-
-  // 缓存中存在，则直接返回
-  if (styleContentPathAndClassMap.get(stylePath)) {
-    return styleContentPathAndClassMap.get(stylePath);
-  }
-
-  let cssContent = fs.readFileSync(stylePath).toString();
+export function getStyleFileTopClassList(cssContent: string) {
+  // 1、会提示子级的class
   // 去掉单行注释
   /*  let splitList = cssContent.split("\n");
   splitList = splitList.filter((item) => !item.trim().startsWith("//"));
   cssContent = splitList.join("\n");
   const classRegex = /[.]{1}([a-zA-Z][a-zA-Z0-9-_]*)\s+{?/g; */
+  // 2、去掉了子级的class
   const classRegex = /^\.([a-zA-Z0-9_-]+)(?=\s*[{])/gm;
   const classIterator = cssContent.matchAll(classRegex);
   let list = [];
@@ -170,8 +116,70 @@ export function parseModuleCssContent(
       list.push(className);
     }
   }
-  // 缓存
-  styleContentPathAndClassMap.set(stylePath, list);
-  console.log(list);
   return list;
+}
+
+/**
+ * 解析css 的内容
+ * @param document
+ * @param varName
+ * @returns
+ */
+export function getModuleCssContent(
+  document: vscode.TextDocument,
+  varName: string
+): string[] {
+  const stylePath = getCurrentVarBelongImportStylePath(document, varName);
+  if (!stylePath) {
+    return [];
+  }
+
+  // 缓存中存在，则直接返回
+  let res = getStyleContentPathAndClass(stylePath);
+  if (res) {
+    return res;
+  }
+
+  let cssContent = fs.readFileSync(stylePath).toString();
+  return getStyleFileTopClassList(cssContent);
+}
+
+/**
+ * 是否是vue文件
+ * @param fullPath
+ * @returns
+ */
+export function isVueFile(fullPath: string) {
+  if (fullPath.endsWith(".vue")) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * 是否是 样式module 文件
+ * @param fullPath
+ * @returns
+ */
+export function isStyleModuleFile(fullPath: string) {
+  if (
+    fullPath.endsWith(".module.css") ||
+    fullPath.endsWith(".module.less") ||
+    fullPath.endsWith(".module.scss")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * 跳转到文件的具体定位处
+ * @param path 
+ * @param range 
+ * @returns 
+ */
+export function jumpToFileLocation(path: string, range: vscode.Range) {
+  return new vscode.Location(vscode.Uri.file(path), range);
 }
