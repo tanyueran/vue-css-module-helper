@@ -44,14 +44,12 @@ export class CssModuleCompletionProvider
 
     const completions: vscode.CompletionItem[] = [];
     list.forEach((cls) => {
-      // TODO
-      // 含有-的class 应该替换掉 . 才对，但是现在替换不了
-      const text = cls.includes("-") ? `.['${cls}']` : `.${cls}`;
       let item = new vscode.CompletionItem(
-        text,
-        vscode.CompletionItemKind.Text
+        // 此处必须含有 . 才对，不然无法显示
+        cls.includes("-") ? `.['${cls}']` : `.${cls}`,
+        vscode.CompletionItemKind.Property
       );
-      item.insertText = text;
+      item.insertText = cls.includes("-") ? `['${cls}']` : `.${cls}`;
       item.range = replaceRange;
       completions.push(item);
     });
