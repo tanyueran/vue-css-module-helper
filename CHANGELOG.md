@@ -22,3 +22,9 @@
 ### Fixed
 
 - 修复输入:class="style." 提示选择["header-wrapper"]的形式不能替换代.的问题
+
+# [0.0.5]
+
+### Features
+
+- 升级vscode 引擎版本
