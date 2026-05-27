@@ -1,4 +1,4 @@
-# vue-outer-module-style-class-helper
+# vue-css-module-helper
 
 > 这是vscode 的插件项目，用于.vue文件的引入外部的css module样式文件的helper，用于提示和跳转样式类名
 

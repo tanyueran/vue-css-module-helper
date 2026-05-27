@@ -1,7 +1,7 @@
 {
-  "name": "vue-outer-module-style-class-helper",
-  "displayName": "vue-outer-module-style-class-helper",
-  "description": "这是一个vue文件的外部module模式的样式文件helper",
+  "name": "vue-css-module-helper",
+  "displayName": "vue-css-module-helper",
+  "description": "这是一个vue文件的css module helper",
   "version": "0.0.6",
   "publisher": "tanyueran",
   "engines": {
