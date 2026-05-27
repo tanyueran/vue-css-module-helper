@@ -28,3 +28,10 @@
 ### Features
 
 - 升级vscode 引擎版本
+
+
+# [0.0.6]
+
+### Features
+
+- 支持vue中引入Scss文件CSS Module的BEM命名规范的，提示和跳转功能

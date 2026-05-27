@@ -2,10 +2,10 @@
   "name": "vue-outer-module-style-class-helper",
   "displayName": "vue-outer-module-style-class-helper",
   "description": "这是一个vue文件的外部module模式的样式文件helper",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "tanyueran",
   "engines": {
-    "vscode": "^1.109.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Other"
@@ -30,7 +30,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.109.0",
+    "@types/vscode": "^1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/test-cli": "^0.0.11",

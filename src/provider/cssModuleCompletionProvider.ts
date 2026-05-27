@@ -3,7 +3,13 @@ import { parseCurrentLineVarName, getModuleCssContent } from "../utils";
 import { getCurrentVueFileAllImportStyleModulePath } from "../utils/vueUtils";
 
 /**
- * css module 模块补全
+ * css module 模块补全提供器
+ * 当用户输入 . 时触发，用于提示样式类名
+ * @param document 当前编辑的文本文档
+ * @param position 光标位置
+ * @param token 取消令牌
+ * @param context 完成上下文
+ * @returns 完成项数组或完成列表对象
  */
 export class CssModuleCompletionProvider
   implements vscode.CompletionItemProvider
@@ -16,13 +22,16 @@ export class CssModuleCompletionProvider
   ): vscode.ProviderResult<
     vscode.CompletionItem[] | vscode.CompletionList<vscode.CompletionItem>
   > {
-    // 解析一下vue的文件
+    // 解析一下vue的文件，获取所有引入的css module样式文件路径
+    // 并将路径缓存起来
     getCurrentVueFileAllImportStyleModulePath(document.uri, document.getText());
 
+    // 获取当前行的变量名
     const varName = parseCurrentLineVarName(document, position);
     if (!varName) {
       return undefined;
     }
+    // 获取当前行的变量名对应的样式类名数组
     const list = getModuleCssContent(document, varName!);
     if (list.length === 0) {
       return undefined;

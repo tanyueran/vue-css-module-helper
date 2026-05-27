@@ -6,19 +6,23 @@ import {
   setVueFilePathAndImportStylePathMap,
 } from "../store";
 
+/**
+ * vue文件中导入的样式文件的路径对象
+ */
 export interface VueImportModuleObj {
-  varName: string;
-  fullPath: string;
+  varName: string; // 导入的变量名
+  fullPath: string; // 样式文件的完整路径
 }
 
 /**
  * 解析当前vue文件内容中所有的导入样式文件
- * @param content
+ * @param currentFileUri  当前vue文件的uri
+ * @param content  文件内容
  * @returns
  */
 export function parseCurrentVueContentAllImportStyleModulePath(
   currentFileUri: Uri,
-  content: string
+  content: string,
 ): VueImportModuleObj[] {
   const importRegex =
     /import\s+(\w+)\s+from\s+['"]([^'"]+\.module\.(scss|less|css))['"]/g;
@@ -58,7 +62,7 @@ export function parseCurrentVueContentAllImportStyleModulePath(
  */
 export function getCurrentVueFileAllImportStyleModulePath(
   currentFileUri: Uri,
-  content: string
+  content: string,
 ): VueImportModuleObj[] {
   let cache = getVueFilePathAndImportStylePathMap(currentFileUri.fsPath);
   if (cache.length) {
@@ -66,6 +70,6 @@ export function getCurrentVueFileAllImportStyleModulePath(
   }
   return parseCurrentVueContentAllImportStyleModulePath(
     currentFileUri,
-    content
+    content,
   );
 }

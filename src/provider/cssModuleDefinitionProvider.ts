@@ -28,35 +28,39 @@ function jumpToStyleFileLocationByRange(stylePath: string, className: string) {
 function jumpToStyleFileLocationTop(stylePath: string) {
   return jumpToFileLocation(
     stylePath,
-    new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0))
+    new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
   );
 }
 
 /**
- * css module 定位
+ * 定位css module 类名
+ * @param document 当前文档
+ * @param position 点击的位置
+ * @param token 取消令牌，用于取消异步操作，当用户 取消时调用
+ * @returns
  */
 export class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
   provideDefinition(
     document: vscode.TextDocument,
     position: vscode.Position,
-    token: vscode.CancellationToken
+    token: vscode.CancellationToken,
   ): vscode.ProviderResult<vscode.Definition | vscode.DefinitionLink[]> {
-    // 先解析vue文件的import
+    // 先解析vue文件的import 样式文件的路径
     const parseResultList: VueImportModuleObj[] =
       getCurrentVueFileAllImportStyleModulePath(
         document.uri,
-        document.getText()
+        document.getText(),
       );
     // 解析为空，说明没有import的内容
     if (parseResultList.length === 0) {
       return undefined;
     }
-
+    // 获取点击的单词范围
     const wordRange = document.getWordRangeAtPosition(position, /[\w\[\]'"]+/);
     if (!wordRange) {
       return undefined;
     }
-
+    // 点击的单词内容
     const clickText = document.getText(wordRange);
     console.log("点击的text为：", clickText);
     const lineRange = document.lineAt(position.line).range;
@@ -122,13 +126,14 @@ export class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
         return undefined;
       }
       const reg = new RegExp(
-        `${varName}\\[['"\`](${portStyleName}[a-zA-Z-_]*)['"\`]\\]`
+        `${varName}\\[['"\`](${portStyleName}[a-zA-Z-_]*)['"\`]\\]`,
       );
       const match = lineContent.match(reg);
       if (!match) {
         return undefined;
       }
       const [, styleName] = match;
+      // 跳转样式文件指定位置
       return jumpToStyleFileLocationByRange(obj.fullPath, styleName);
 
       /**
