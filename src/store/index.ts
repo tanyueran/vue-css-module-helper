@@ -1,31 +1,34 @@
 import { VueImportModuleObj } from "../utils/vueUtils";
+import type { StyleFileIndex } from "../utils/styleParser";
 
 /**
- * 缓存已经解析的样式文件中的内容
+ * 缓存已经解析的样式文件索引
  * key: fullPath
- * value: class 的 string[]
+ * value: 该文件的 class 定义索引（含类名与位置）
  */
-const styleContentPathAndClassMap = new Map<string, string[]>();
+const styleContentPathAndClassMap = new Map<string, StyleFileIndex>();
 
 /**
  * 设置样式文件的缓存
- * @param fullPath 样式文件的fullPath
- * @param classNameList 类名数组
+ * @param {string} fullPath - 样式文件的fullPath
+ * @param {StyleFileIndex} index - 解析出的 class 索引
+ * @returns {void}
  */
 export function setStyleContentPathAndClass(
   fullPath: string,
-  classNameList: string[],
-) {
-  styleContentPathAndClassMap.set(fullPath, classNameList);
+  index: StyleFileIndex,
+): void {
+  styleContentPathAndClassMap.set(fullPath, index);
 }
+
 /**
  * 获取样式文件的缓存
- * @param fullPath 样式文件的fullPath
- * @returns 类名数组
+ * @param {string} fullPath - 样式文件的fullPath
+ * @returns {StyleFileIndex | undefined} class 索引，未缓存时返回 undefined
  */
 export function getStyleContentPathAndClass(
   fullPath: string,
-): string[] | undefined {
+): StyleFileIndex | undefined {
   return styleContentPathAndClassMap.get(fullPath);
 }
 
@@ -84,6 +87,22 @@ export function deleteVueFilePathAndImportStylePathMap(
   vueFileFullPath: string,
 ) {
   vueFilePathAndImportStylePathMap.delete(vueFileFullPath);
+}
+
+/**
+ * 找出所有引用了指定样式文件的 vue 文件路径
+ * 用于样式文件被删除/重命名时，连带失效相关 vue 文件的 import 缓存
+ * @param {string} stylePath - 样式文件的fullPath
+ * @returns {string[]} 引用了该样式文件的 vue 文件路径列表
+ */
+export function findVueFilesReferencingStyle(stylePath: string): string[] {
+  const result: string[] = [];
+  vueFilePathAndImportStylePathMap.forEach((importList, vueFilePath) => {
+    if (importList.some((item) => item.fullPath === stylePath)) {
+      result.push(vueFilePath);
+    }
+  });
+  return result;
 }
 
 /**

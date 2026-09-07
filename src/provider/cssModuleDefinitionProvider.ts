@@ -1,31 +1,95 @@
 import * as vscode from "vscode";
-import { findStringRangeInFile, jumpToFileLocation } from "../utils";
+import { findClassRangeInStyleFile, jumpToFileLocation } from "../utils";
 import {
   getCurrentVueFileAllImportStyleModulePath,
   VueImportModuleObj,
 } from "../utils/vueUtils";
 
 /**
- * 跳到样式文件指定位置
- * @param stylePath
- * @param className
- * @returns
+ * 匹配 css module 的两种访问写法：
+ * - 点号访问：style.foo
+ * - 下标访问：style['foo-bar'] / style["foo-bar"] / style[`foo-bar`]
  */
-function jumpToStyleFileLocationByRange(stylePath: string, className: string) {
-  // 获取在样式文件中的位置，并跳到对应的地方去
-  const range = findStringRangeInFile(stylePath, `.${className}`);
-  if (range) {
-    return jumpToFileLocation(stylePath, range);
+const CSS_MODULE_ACCESS_REGEX =
+  /([A-Za-z_$][\w$]*)\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*(['"`])([^'"`]+)\3\s*\])/g;
+
+/**
+ * 光标所在处解析出的 css module 访问信息
+ */
+interface AccessInfo {
+  /** 变量名，如 style */
+  varName: string;
+  /** 类名，如 foo-bar */
+  className: string;
+  /** 光标是否落在变量名上（而非类名上） */
+  onVarName: boolean;
+}
+
+/**
+ * 从当前行中解析光标所在的 css module 访问表达式
+ *
+ * 相比逐字符向两侧扫描的做法，这里直接在整行上做全局匹配，
+ * 再判断光标是否落在某个匹配区间内，可正确处理模板字符串、
+ * 数组字面量、多个表达式共存等场景
+ *
+ * @param {string} lineContent - 光标所在行的完整文本
+ * @param {number} character - 光标在该行中的列索引
+ * @returns {AccessInfo | undefined} 解析结果，未命中返回 undefined
+ */
+function parseAccessAtPosition(
+  lineContent: string,
+  character: number,
+): AccessInfo | undefined {
+  CSS_MODULE_ACCESS_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = CSS_MODULE_ACCESS_REGEX.exec(lineContent)) !== null) {
+    const start = match.index;
+    const end = start + match[0].length;
+    // 光标需落在整个表达式范围内（含末尾，便于点在表达式右边界时也能识别）
+    if (character < start || character > end) {
+      continue;
+    }
+
+    const varName = match[1];
+    const className = match[2] ?? match[4];
+    if (!className) {
+      continue;
+    }
+
+    return {
+      varName,
+      className,
+      onVarName: character <= start + varName.length,
+    };
   }
+
   return undefined;
 }
 
 /**
- * 跳到样式文件的顶部
- * @param stylePath
- * @returns
+ * 跳到样式文件中指定类名的位置，找不到类名时兜底跳到文件顶部
+ * @param {string} stylePath - 样式文件的完整路径
+ * @param {string} className - 类名（不含点号）
+ * @returns {vscode.Location} 跳转位置
  */
-function jumpToStyleFileLocationTop(stylePath: string) {
+function jumpToStyleFileLocationByRange(
+  stylePath: string,
+  className: string,
+): vscode.Location {
+  const range = findClassRangeInStyleFile(stylePath, className);
+  if (range) {
+    return jumpToFileLocation(stylePath, range);
+  }
+  return jumpToStyleFileLocationTop(stylePath);
+}
+
+/**
+ * 跳到样式文件的顶部
+ * @param {string} stylePath - 样式文件的完整路径
+ * @returns {vscode.Location} 指向文件首行首列的位置
+ */
+function jumpToStyleFileLocationTop(stylePath: string): vscode.Location {
   return jumpToFileLocation(
     stylePath,
     new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
@@ -34,167 +98,52 @@ function jumpToStyleFileLocationTop(stylePath: string) {
 
 /**
  * 定位css module 类名
- * @param document 当前文档
- * @param position 点击的位置
- * @param token 取消令牌，用于取消异步操作，当用户 取消时调用
- * @returns
  */
 export class CssModuleDefinitionProvider implements vscode.DefinitionProvider {
+  /**
+   * 提供 css module 类名的定义位置
+   * @param {vscode.TextDocument} document - 当前文档
+   * @param {vscode.Position} position - 点击的位置
+   * @param {vscode.CancellationToken} token - 取消令牌
+   * @returns {vscode.ProviderResult<vscode.Definition>} 目标位置，无法定位时返回 undefined
+   */
   provideDefinition(
     document: vscode.TextDocument,
     position: vscode.Position,
     token: vscode.CancellationToken,
   ): vscode.ProviderResult<vscode.Definition | vscode.DefinitionLink[]> {
+    if (token.isCancellationRequested) {
+      return undefined;
+    }
+
     // 先解析vue文件的import 样式文件的路径
     const parseResultList: VueImportModuleObj[] =
       getCurrentVueFileAllImportStyleModulePath(
         document.uri,
         document.getText(),
       );
-    // 解析为空，说明没有import的内容
     if (parseResultList.length === 0) {
       return undefined;
     }
-    // 获取点击的单词范围
-    const wordRange = document.getWordRangeAtPosition(position, /[\w\[\]'"]+/);
-    if (!wordRange) {
+
+    const lineContent = document.lineAt(position.line).text;
+    const access = parseAccessAtPosition(lineContent, position.character);
+    if (!access) {
       return undefined;
     }
-    // 点击的单词内容
-    const clickText = document.getText(wordRange);
-    console.log("点击的text为：", clickText);
-    const lineRange = document.lineAt(position.line).range;
-    // 点击的当前行的内容
-    let lineContent = document.getText(lineRange);
 
-    /**
-     * 点击的内容含有 .
-     */
-    if (clickText.includes(".")) {
-      console.log("===========走的含点的逻辑============");
-      const splitList = clickText.split(".");
-      if (splitList.length !== 2) {
-        return undefined;
-      }
-      const [varName, styleName] = splitList;
-      const obj = parseResultList.find((item) => item.varName === varName);
-      if (!obj) {
-        return undefined;
-      }
-      return jumpToStyleFileLocationByRange(obj.fullPath, styleName);
-      /**
-       * 点击的内容是 style['xxx-xxx']
-       */
-    } else if (/(\w+)\[['"]([a-zA-z_-]+)['"]\]/.test(clickText)) {
-      console.log("===========走的含【】的逻辑============");
-      const match = /(\w+)\[['"]([a-zA-z_-]+)['"]\]/.exec(clickText);
-      if (!match) {
-        return undefined;
-      }
-      const [, varName, styleName] = match;
-      const obj = parseResultList.find((item) => item.varName === varName);
-      if (!obj) {
-        return undefined;
-      }
-      return jumpToStyleFileLocationByRange(obj.fullPath, styleName);
-      /**
-       * 点击的内容是 stye['xx-
-       */
-    } else if (clickText.includes("[")) {
-      console.log("===========走的含【的逻辑============");
-      let _clickText = clickText;
-      if (/^['"]\[/.test(clickText)) {
-        _clickText = clickText.replace(/^['"]\[/, "");
-      }
-      const splitList = _clickText.split(/\[['"]{1}/);
-      if (splitList.length !== 2) {
-        return undefined;
-      }
-      const [varName, portStyleName] = splitList.map((item) => {
-        let startReg = /^['"]/g;
-        if (startReg.test(item)) {
-          return item.replace(startReg, "");
-        }
-        let endReg = /['"]$/g;
-        if (endReg.test(item)) {
-          return item.replace(endReg, "");
-        }
-        return item;
-      });
-      const obj = parseResultList.find((item) => item.varName === varName);
-      if (!obj) {
-        return undefined;
-      }
-      const reg = new RegExp(
-        `${varName}\\[['"\`](${portStyleName}[a-zA-Z-_]*)['"\`]\\]`,
-      );
-      const match = lineContent.match(reg);
-      if (!match) {
-        return undefined;
-      }
-      const [, styleName] = match;
-      // 跳转样式文件指定位置
-      return jumpToStyleFileLocationByRange(obj.fullPath, styleName);
-
-      /**
-       * 点击的是style 或者 点击的是变量中的某一个
-       */
-    } else {
-      console.log("===========走的最后的一步逻辑============");
-      // 当前点击的位置，在当前行的index值
-      const index = position.character;
-      let startIndex = index;
-      let endIndex = index;
-      while (!/['",]/.test(lineContent[startIndex])) {
-        startIndex--;
-        if (startIndex <= 0) {
-          break;
-        }
-      }
-      while (!/['",]/.test(lineContent[endIndex])) {
-        endIndex++;
-        if (endIndex >= lineContent.length) {
-          break;
-        }
-      }
-      // 结果不应该含有引号
-      let likeStyleName = lineContent.slice(startIndex + 1, endIndex).trim();
-      console.log("styleName", likeStyleName);
-      if (likeStyleName.includes(".")) {
-        console.log("----styleName 包含.-----");
-        const match = likeStyleName.match(/(\w+).(\w+)/);
-        if (!match) {
-          return undefined;
-        }
-        const [, varName, styleName] = match;
-        console.log("varName", varName);
-        console.log("styleName", styleName);
-        const obj = parseResultList.find((item) => item.varName === varName);
-        if (!obj) {
-          return undefined;
-        }
-        return jumpToStyleFileLocationByRange(obj.fullPath, styleName);
-      } else {
-        console.log("----styleName 不包含.-----");
-        let splitCaret: string | RegExp = likeStyleName;
-        if (likeStyleName.includes("-")) {
-          splitCaret = new RegExp(`\\[['"]${likeStyleName}['"]\\]`);
-        }
-        const splitList = lineContent.split(splitCaret);
-        if (!splitList.length) {
-          return undefined;
-        }
-        const match = splitList[0].match(/(\w+)$/);
-        if (!match) {
-          return undefined;
-        }
-        const [, varName] = match;
-        const obj = parseResultList.find((item) => item.varName === varName);
-        if (!obj) {
-          return undefined;
-        }
-        return jumpToStyleFileLocationByRange(obj.fullPath, likeStyleName);
-      }
+    const target = parseResultList.find(
+      (item) => item.varName === access.varName,
+    );
+    if (!target) {
+      return undefined;
     }
+
+    // 点在变量名上时，直接打开样式文件
+    if (access.onVarName) {
+      return jumpToStyleFileLocationTop(target.fullPath);
+    }
+
+    return jumpToStyleFileLocationByRange(target.fullPath, access.className);
   }
 }

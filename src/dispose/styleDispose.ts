@@ -1,23 +1,14 @@
 import * as vscode from "vscode";
-import {
-  getStyleContentPathAndClass,
-  setStyleContentPathAndClass,
-} from "../store";
-import { getStyleFileTopClassList } from "../utils";
+import { refreshStyleFileIndex } from "../utils";
 
 /**
- * 样式文件DidChangeTextDocument 触发的处理
- * @param document
+ * 样式文件内容变化（编辑中或保存后）触发的处理
+ * 直接重新解析并覆盖缓存，保证未保存的修改也能即时生效
+ * @param {vscode.TextDocument} document - 样式文档
+ * @returns {void}
  */
 export function styleFileDidChangeTextDocumentDispose(
-  document: vscode.TextDocument
-) {
-  const fsPath = document.uri.fsPath;
-  const classNameList = getStyleContentPathAndClass(fsPath);
-  // 之前缓存过，更新缓存
-  if (classNameList) {
-    const content = document.getText();
-    const newStyleFileTopClassList = getStyleFileTopClassList(content);
-    setStyleContentPathAndClass(fsPath, newStyleFileTopClassList);
-  }
+  document: vscode.TextDocument,
+): void {
+  refreshStyleFileIndex(document.uri.fsPath, document.getText());
 }

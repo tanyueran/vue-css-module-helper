@@ -15,7 +15,27 @@
   ],
   "icon": "./images/icon.png",
   "main": "./dist/extension.js",
-  "contributes": {},
+  "contributes": {
+    "configuration": {
+      "title": "Vue CSS Module Helper",
+      "properties": {
+        "vueCssModuleHelper.alias": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "自定义路径别名映射，优先级高于 tsconfig/jsconfig 的 `compilerOptions.paths`。键为别名（如 `@`、`~@`），值为相对工作区根目录的路径（可为字符串或字符串数组）。\n\n示例：\n```json\n{\n  \"@\": \"src\",\n  \"~\": [\"src\", \"packages\"]\n}\n```",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
     "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",

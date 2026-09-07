@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { parseCurrentLineVarName, getModuleCssContent } from "../utils";
+import { parseCurrentLineModuleAccess, getModuleCssContent } from "../utils";
 import { getCurrentVueFileAllImportStyleModulePath } from "../utils/vueUtils";
 
 /**
@@ -18,7 +18,7 @@ export class CssModuleCompletionProvider
     document: vscode.TextDocument,
     position: vscode.Position,
     token: vscode.CancellationToken,
-    context: vscode.CompletionContext
+    context: vscode.CompletionContext,
   ): vscode.ProviderResult<
     vscode.CompletionItem[] | vscode.CompletionList<vscode.CompletionItem>
   > {
@@ -26,40 +26,32 @@ export class CssModuleCompletionProvider
     // 并将路径缓存起来
     getCurrentVueFileAllImportStyleModulePath(document.uri, document.getText());
 
-    // 获取当前行的变量名
-    const varName = parseCurrentLineVarName(document, position);
-    if (!varName) {
+    // 获取当前行的变量名与已输入字符
+    const access = parseCurrentLineModuleAccess(document, position);
+    if (!access) {
       return undefined;
     }
     // 获取当前行的变量名对应的样式类名数组
-    const list = getModuleCssContent(document, varName!);
+    const list = getModuleCssContent(document, access.varName);
     if (list.length === 0) {
       return undefined;
     }
 
-    const lineText = document.lineAt(position).text;
-    const prefix = lineText.slice(0, position.character);
-    const match = prefix.match(/(\w+)\.([a-zA-Z0-9_]*)$/); // 匹配 style.xxx
-
-    if (!match) {
-      return undefined;
-    }
-    // 计算 . 的位置：varName 结束的位置
-    const dotIndex = match.index! + match[1].length; // match[1] 是 varName
     const replaceRange = new vscode.Range(
-      new vscode.Position(position.line, dotIndex), // 从 . 开始
-      position // 到光标
+      new vscode.Position(position.line, access.dotIndex), // 从 . 开始
+      position, // 到光标
     );
 
     const completions: vscode.CompletionItem[] = [];
     list.forEach((cls) => {
-      let item = new vscode.CompletionItem(
+      const item = new vscode.CompletionItem(
         // 此处必须含有 . 才对，不然无法显示
         cls.includes("-") ? `.['${cls}']` : `.${cls}`,
-        vscode.CompletionItemKind.Property
+        vscode.CompletionItemKind.Property,
       );
       item.insertText = cls.includes("-") ? `['${cls}']` : `.${cls}`;
       item.range = replaceRange;
+      item.filterText = `.${cls}`;
       completions.push(item);
     });
     return completions;
