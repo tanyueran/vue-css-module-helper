@@ -2,7 +2,7 @@
   "name": "vue-css-module-helper",
   "displayName": "vue-css-module-helper",
   "description": "这是一个vue文件的css module helper",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "tanyueran",
   "engines": {
     "vscode": "^1.100.0"
