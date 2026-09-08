@@ -52,3 +52,24 @@
 - 修复类名前缀误命中的问题（如 `.btn` 命中 `.btn-primary`）
 - 修复注释、字符串字面量、`url(...)` 与伪类括号内（如 `:not(.b)`、`:global(.foo)`）的类名被误识别的问题
 - 跳过 LESS mixin（`.mixin()`）与含 `#{...}` 插值的选择器
+
+# [0.0.8]
+
+### Features
+
+- 接入 `@vscode/test-cli` 测试体系，补齐样式解析、别名解析、vue 导入解析、缓存失效与 Provider 补全/跳转的测试用例
+- 新增 `sample/` 测试夹具工作区（含别名 import、混合 import、内联 `<style module>`、SCSS/LESS 样式等场景）
+- 新增 `pnpm test`、`pnpm compile-tests`、`pnpm watch-tests` 脚本与独立的 `tsconfig.test.json`
+- 支持通过 `VSCODE_PATH` 环境变量复用本机已安装的 VS Code 运行测试，避免重复下载
+- 新增 CONTRIBUTING.md，README 精简为使用文档，开发/测试/打包说明迁移至 CONTRIBUTING.md
+
+### Fixed
+
+- 修复 `package.json` 中仓库地址仍指向旧仓库名的问题
+- 修复 README 在插件市场中示例动图无法显示的问题（改用绝对地址）
+
+### Chore
+
+- `tsconfig.json` 增加 `include: ["src"]`，避免类型检查扫描无关目录
+- `.gitignore` 忽略 `out/`、`.vscode-test/`；`.vscodeignore` 排除 `sample/` 与 `CONTRIBUTING.md`，减小打包体积
+- 移除模板遗留的示例测试 `src/test/extension.test.ts`

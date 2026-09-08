@@ -3,10 +3,12 @@
 out/**
 node_modules/**
 src/**
+sample/**
 .gitignore
 .yarnrc
 esbuild.js
 vsc-extension-quickstart.md
+CONTRIBUTING.md
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map

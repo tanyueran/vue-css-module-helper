@@ -1,0 +1,13 @@
+// 测试专用编译配置：把 src 编译到 out/，供 @vscode/test-cli 加载
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // vscode 扩展宿主以 CommonJS 加载测试产物
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "out",
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["sample"]
+}

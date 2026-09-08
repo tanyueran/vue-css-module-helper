@@ -1,0 +1,39 @@
+// 行注释中的 .comment-class 不应被收集
+/* 块注释中的 .block-class 也不应被收集 */
+
+.container {
+  color: red;
+  background: url(./assets//bg.png);
+  content: ".string-class";
+
+  &__header {
+    font-size: 12px;
+
+    &--active {
+      color: blue;
+    }
+  }
+
+  &:hover {
+    color: green;
+  }
+}
+
+.btn,
+.btn-primary {
+  padding: 4px;
+}
+
+.card:not(.excluded) {
+  margin: 0;
+}
+
+.#{$dynamic}-item {
+  color: pink;
+}
+
+@media (max-width: 600px) {
+  .responsive {
+    display: none;
+  }
+}

@@ -2,7 +2,7 @@
   "name": "vue-css-module-helper",
   "displayName": "vue-css-module-helper",
   "description": "这是一个vue文件的css module helper",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "tanyueran",
   "engines": {
     "vscode": "^1.100.0"
@@ -45,6 +45,10 @@
     "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
+    "compile-tests": "tsc -p tsconfig.test.json",
+    "watch-tests": "tsc -p tsconfig.test.json --watch",
+    "pretest": "pnpm run compile-tests",
+    "test": "vscode-test",
     "vscode-pkg": "npx vsce package"
   },
   "devDependencies": {
@@ -63,6 +67,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tanyueran/vue-outer-module-style-class-helper"
+    "url": "git+https://github.com/tanyueran/vue-css-module-helper.git"
   }
 }

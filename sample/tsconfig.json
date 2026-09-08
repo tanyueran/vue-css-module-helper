@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    // 这里的注释与尾逗号用于验证 stripJsonComments 的 jsonc 清洗能力
+    "paths": {
+      "#styles/*": ["src/styles/*"],
+    },
+  }
+}

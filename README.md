@@ -1,8 +1,8 @@
 # vue-css-module-helper
 
-> 一个 VS Code 插件：为 `.vue` 单文件组件中的 CSS Module 提供类名**补全**与**跳转到定义**能力，外部样式文件与 SFC 内联 `<style module>` 均支持。
+> 为 `.vue` 单文件组件中的 CSS Module 提供类名**补全**与**跳转到定义**，外部样式文件与 SFC 内联 `<style module>` 均支持。
 
-![image](./images/example.gif)
+![image](https://raw.githubusercontent.com/tanyueran/vue-css-module-helper/main/images/example.gif)
 
 ## 功能特性
 
@@ -84,31 +84,10 @@
 }
 ```
 
-## 开发
+## 已知限制
 
-```bash
-pnpm install      # 安装依赖
-pnpm watch        # 监听编译，F5 启动扩展调试
-pnpm check-types  # 类型检查
-pnpm lint         # 代码检查
-pnpm package      # 生产构建
-```
+- 同一 vue 文件内的多个 `<style module>` 目前共用一份索引，`$style.` 会把具名模块 `<style module="foo">` 的类名一并提示出来。
 
-## 打包与安装
+## 参与开发
 
-- 1、项目中安装 @vscode/vsce `pnpm add -D @vscode/vsce`
-- 2、打包 `pnpm vscode-pkg`（等价于 `npx vsce package`）
-- 3、把生成的 `.vsix` 文件安装到自己的 vscode 中即可使用
-
-## TODO
-
-- [x] 支持 vue 单文件中输入 `:class="style."` 时的提示
-- [x] 支持 vue 单文件中点击 `:class="style.box"` 时进入具体的样式定义处
-- [x] 缓存优化，以及缓存清理
-- [x] 支持属性传递的情况下的跳转，类似：`<div :xx-class="commonStyle['detail-page-sub-title']">基础信息</div>`
-- [x] 支持数组的情况下的跳转，类似：`<div :class="[commonStyle['detail-page-sub-title'], style['title']]">基础信息</div>`
-- [x] 排除样式文件中 `:global` 等伪类括号内的 class
-- [x] 输入 `:class="style."` 提示选择 `['header-wrapper']` 的形式能正确替换掉 `.`
-- [x] 支持 SCSS/LESS 嵌套 BEM 命名（`&__xxx`、`&--xxx`）的提示与跳转
-- [x] 支持 SFC 内联 `<style module>` 与 `useCssModule()`
-- [x] 支持路径别名（用户配置 / tsconfig paths / 默认 `@`、`~`）
+本地开发、测试与打包说明见 [CONTRIBUTING.md](https://github.com/tanyueran/vue-css-module-helper/blob/main/CONTRIBUTING.md)。
